@@ -1,4 +1,4 @@
-// 制限時間の設定画面
+//制限時間の設定画面
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
@@ -106,15 +106,17 @@ class LimitTimeSet extends JFrame implements MouseListener, ActionListener{
             new LimitTimeSet("時間の入力");
         }
 
-		
 	}
 
-class Accept extends JFrame implements MouseListener{
+
+//承認画面の表示
+class Accept extends JFrame implements MouseListener, ActionListener{
 	
-	JLabel l1, restTimetext;
+	JLabel l1, restTimetext, restTimenum;
 	JTextField tf;
 	JButton Accept, NoAccept1, NoAccept2;
 	String desired_time;
+	Timer timer;
 	
 	Accept(String title, String desired_time){
 		super(title);
@@ -142,6 +144,27 @@ class Accept extends JFrame implements MouseListener{
 		p.add(NoAccept2);
 		
 		restTimetext = new JLabel("残り時間 : ");
+		p.add(restTimetext);
+		
+		//以下は1秒に値を1だけ減らすタイマーを定義している。
+		int msec = 1000;
+		ActionListener al = new ActionListener(){
+			public void actionPerformed(ActionEvent e) {
+				restTimenum.setText(String.valueOf(Integer.valueOf(restTimenum.getText())-1));
+				if(restTimenum.getText().equals("-1"))
+				//残り時間が0になったら時間切れ。
+					{
+					restTimenum.setText("0");
+					//stopperはタイマーをストップするためのメソッド。
+					stopper();
+					System.out.println("時間切れ");
+				}
+			}
+		};
+		timer = new Timer(msec , al);
+		timer.start();
+		restTimenum = new JLabel("20");//残り時間を表示するためのラベルを作成
+		p.add(restTimenum);
 		
 		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);//ウィンドウを閉じる場合の処理
@@ -155,5 +178,9 @@ class Accept extends JFrame implements MouseListener{
 	public void mouseReleased(MouseEvent e) {}
 	public void mouseEntered(MouseEvent e) {}
 	public void mouseExited(MouseEvent e) {}
+	public void actionPerformed(ActionEvent e) {}
+	public void stopper() {
+		timer.stop();
+	}
 
 }
