@@ -1,6 +1,8 @@
-	// 制限時間の設定画面
+// 制限時間の設定画面
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
@@ -11,11 +13,12 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.Timer;
 
-class LimitTimeSet extends JFrame implements MouseListener{
-		Timer timer;
+class LimitTimeSet extends JFrame implements MouseListener, ActionListener{
+		
 		JLabel tlabel1, tlabel2, tlabel3, restTimetext, restTimenum;
 		JButton Ok;
 		JTextField tf1, tf2;
+		Timer timer;
 
 		LimitTimeSet (String title){
 			super(title);
@@ -45,13 +48,32 @@ class LimitTimeSet extends JFrame implements MouseListener{
 			
 			restTimetext = new JLabel("残り時間 : ");
 			p.add(restTimetext);
+			//以下は1秒に値を1だけ減らすタイマーを定義している。
+			int msec = 1000;
+			ActionListener al = new ActionListener(){
+				public void actionPerformed(ActionEvent e) {
+					restTimenum.setText(String.valueOf(Integer.valueOf(restTimenum.getText())-1));
+					if(restTimenum.getText().equals("-1"))
+					//残り時間が0になったら時間切れ。
+						{
+						restTimenum.setText("0");
+						//stopperはタイマーをストップするためのメソッド。
+						stopper();
+						System.out.println("時間切れ");
+					}
+				}
+			};
+			timer = new Timer(msec , al);
+			timer.start();
+			restTimenum = new JLabel("20");//残り時間を表示するためのラベルを作成
+			p.add(restTimenum);
+			
 			
 			setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);//ウィンドウを閉じる場合の処理
 			setSize(200, 300);//ウィンドウのサイズを設定
 			setVisible(true);
 			
 		}
-		//Threadを用いてタイマー設定
 		
 		//希望時間の取得
 		String get_desired_time() {
@@ -75,15 +97,21 @@ class LimitTimeSet extends JFrame implements MouseListener{
 		public void mouseReleased(MouseEvent e) {}
 		public void mouseEntered(MouseEvent e) {}
 		public void mouseExited(MouseEvent e) {}
+		public void stopper() {
+			timer.stop();
+		}
+		public void actionPerformed(ActionEvent e) {}
 		
         public static void main(String[] args){
             new LimitTimeSet("時間の入力");
         }
+
+		
 	}
 
 class Accept extends JFrame implements MouseListener{
 	
-	JLabel l1;
+	JLabel l1, restTimetext;
 	JTextField tf;
 	JButton Accept, NoAccept1, NoAccept2;
 	String desired_time;
@@ -113,16 +141,19 @@ class Accept extends JFrame implements MouseListener{
 		NoAccept2.setBounds(50,50,60,30);
 		p.add(NoAccept2);
 		
+		restTimetext = new JLabel("残り時間 : ");
+		
+		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);//ウィンドウを閉じる場合の処理
-		setSize(250, 400);//ウィンドウのサイズを設定
+		setSize(200, 300);//ウィンドウのサイズを設定
 		setVisible(true);
 	}
 	
 	public void mouseClicked(MouseEvent e) {
 	}
-
 	public void mousePressed(MouseEvent e) {}
 	public void mouseReleased(MouseEvent e) {}
 	public void mouseEntered(MouseEvent e) {}
 	public void mouseExited(MouseEvent e) {}
+
 }
