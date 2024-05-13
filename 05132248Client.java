@@ -778,6 +778,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 				break;
 		}
 		decided = 0;
+		restTimenum.setText(String.valueOf(time));
 		System.out.println("exit");
 		//jfslt.setVisible(false);
 		//cont.removeNotify();
@@ -1094,10 +1095,6 @@ public void setLimitTime(Player player) {
 		}
 	}
 	
-	public void set_restTimenum() {
-		restTimenum.setText(String.valueOf(time));
-	}
-	
 	//テスト用のmain
 	public static void main(String args[]){
 		//ログイン処理
@@ -1128,7 +1125,6 @@ public void setLimitTime(Player player) {
 			oclient.setTime();
 		}
 		System.out.println("111111");
-		oclient.set_restTimenum();
 		game.start();
 		oclient.setVisible(true);
 	}
