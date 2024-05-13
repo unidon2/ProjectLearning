@@ -1,4 +1,4 @@
-/* 最終更新 5/9/14:07 */
+/* 最終更新 5/14/6:41 */
 
 public class Othello {
     /* 空き: 0　黒: 1　白: -1  置ける: +-2 両方置ける: 3*/
@@ -202,7 +202,7 @@ public class Othello {
     	int count = 0;
     	for (int i = 0; i < 8; i++) {
     		for (int j = 0; j < 8; j++) {
-    			if (Grid[i][j] != 0) {
+    			if (Grid[i][j] == 1 || Grid[i][j] == -1) {
     				count++;
     			}
     			bw += Grid[i][j];
@@ -254,3 +254,4 @@ public class Othello {
     	return win;
     }
 }
+
