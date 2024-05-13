@@ -294,8 +294,6 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 				time = input_time;
 				//希望時間が最終的に決められたのでselectedをtrueに
 				selected=true;
-				//後に修正予定
-				System.out.println("最終的な残り時間が決められた");
 			}
 			if((msg.equals("NoAccept1"))||(msg.equals("NoAccept2"))) {
 				if(msg.equals("NoAccept1")) {
@@ -367,6 +365,8 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 								stopper_access();	
 								System.out.println("時間切れ");
 								sendMessage("AAccept");	//後手用の制限時間が切れたら承認とみなす
+								//time = get_desired_time(desired_time.getText());
+								//restTimenum.setText(String.valueOf(time));
 								decided = 1;
 								}
 						}
@@ -786,9 +786,9 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			flag_cb = false;
 		}
 	}
-	public  void updateTime(int t) {
-		System.out.println(t);
-		restTimenum.setText(String.valueOf(t));
+	public  void updateTime() {
+		//System.out.println(t);
+		//restTimenum.setText(String.valueOf(t));
 		//turn.setText("黒のターン");
 		updateDisp("800");
 		updateDisp("800");
@@ -885,6 +885,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		}
 		selected = false;
 		decided = 0;
+		//restTimenum.setText(String.valueOf(time));
 		//cont.removeAll();
 		//conts.printComponents(getGraphics());
 		//conts.removeNotify();
@@ -1090,6 +1091,8 @@ public void setLimitTime(Player player) {
 						Accept.setEnabled(false);
 						NoAccept1.setEnabled(false);
 						NoAccept2.setEnabled(false);
+						//time = get_desired_time(desired_time.getText());
+						//restTimenum.setText(String.valueOf(time));
 					  }
 					}
 				public void mousePressed(MouseEvent e) {}
@@ -1120,9 +1123,6 @@ public void setLimitTime(Player player) {
 				public void mouseExited(MouseEvent e) {}
 			});
 			
-			
-			
-
 			NoAccept2.addMouseListener(new MouseListener() {
 				public void mouseClicked(MouseEvent e) {
 					if(e.getSource() == NoAccept2&&NoAccept2.isEnabled()==true) {
@@ -1163,6 +1163,15 @@ public void setLimitTime(Player player) {
 			//cont.setVisible(false);
 		}
 	 
+	 //desired_time : 10:15 からint型の値：615 取得
+	 /*public int get_desired_time(String strt) {
+		 
+		 if(strt.length()==4) {
+			 return (Integer.parseInt(String.valueOf(strt.charAt(0)))*60 + Integer.parseInt(String.valueOf(strt.charAt(2)))*10 + Integer.parseInt(String.valueOf(strt.charAt(3))));
+		 }else {
+			 return ((Integer.parseInt(String.valueOf(strt.charAt(0)))*10 +Integer.parseInt(String.valueOf(strt.charAt(1))))*60 + Integer.parseInt(String.valueOf(strt.charAt(3)))*10 + Integer.parseInt(String.valueOf(strt.charAt(4))));
+		 }
+	 }*/
 	 
 	 //先手からの希望時間の取得
 		public String str_desired_time(int time) {
@@ -1183,27 +1192,27 @@ public void setLimitTime(Player player) {
 		Player player = new Player(); //プレイヤオブジェクトの用意(ログイン)
 		player.setName(myName); //名前を受付
 		Othello game = new Othello(); //オセロオブジェクトを用意
-		int tm=0;;
+		//int tm = 0;
 		Client oclient = new Client(game, player); //引数としてオセロオブジェクトを渡す
 		oclient.connectServer("localhost", 10000);
 		System.out.println("Matching...");
 		oclient.waitMatching();
 		System.out.println("Matched!");
 		if(player.getColor()==1) {
-			tm = oclient.getTime();
+			oclient.getTime();
 		}
 		else {
 			oclient.setTime();
 		}
 		oclient.clean();
 		if(player.getColor()==-1) {
-			tm = oclient.getTime();
+			oclient.getTime();
 		}
 		else {
 			oclient.setTime();
 		}
 		oclient.updateDisp("800");
-		oclient.updateTime(tm);
+		oclient.updateTime();
 		game.start();
 		oclient.setVisible(true);
 	}
