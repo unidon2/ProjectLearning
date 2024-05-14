@@ -1,4 +1,4 @@
-/* 5/14 6:41 */
+/* 5/14 13:19 */
 
 //パッケージのインポート
 import java.awt.Color;
@@ -37,6 +37,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 	private JLabel playername, color= new JLabel("") ,turn = new JLabel(""); //プレイヤ名、色、ターン
 	private JLabel restTimenum,restTimetext,oprestTimetext,oprestTimenum; // 残り時間ラベル
 	private JLabel giveupLabel,guideLabel,score; //　ガイドラベル
+	private JLabel jld, jld2;
 	private JButton giveup1,giveup2;
 	private JRadioButton help,nohelp;
 	private Timer timer;
@@ -49,6 +50,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 	private int notouch;
 	private int nott;
 	static int decided = 0;
+	static boolean passing = false;
 	
 	private JLabel input_restTimetext, input_restTimenum;
 	private JLabel access_restTimetext, access_restTimenum;
@@ -220,6 +222,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		
 	public void Playing() {
 		game.start();
+		setSize(370,600);
 		int row = 8;
 		int[] grids = game.getGrid();
 		setTitle("ネットワーク対戦型オセロゲーム");//ウィンドウのタイトル
@@ -393,6 +396,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			oprestTimenum.setText(String.valueOf(optime));
 			if (game.check_end(0) == 1) {
 				endmsg(game.result());
+				return;
 			}
 			if (game.pass(game.getTurn()) == 1) {
 				detect("You cannot put!!");
@@ -526,8 +530,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		System.out.println("サーバからメッセージ " + msg + " を受信しました"); //テスト用標準出力
 	}
 	public void detect(String str) {
-		JLabel jld = new JLabel(str);
-		JLabel jld2;
+		jld = new JLabel(str);
 		if(str.equals("You cannot put!!")) {
 			jld2 = new JLabel("Pass!!");
 		}
@@ -539,8 +542,10 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		jld2.setBounds(10,60,350,50);
 		c.add(jld);
 		c.add(jld2);
+		passing = true;
 		c.setVisible(true);
 	}
+	
 	public int updateDisp(String place){	// 画面を更新する(800呼び出しは再描画)
 		if(notouch==1) {
 			for(int i=0;i<64;i++) {
@@ -592,6 +597,10 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			
 		if (place != "800") {
 			timer.start();
+			if (passing) {
+				c.remove(jld);
+				c.remove(jld2);
+			}
 		}
 		}
 		return 0;
@@ -664,9 +673,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		JLabel jl2 = new JLabel();
 		score = new JLabel();
 		//judgeは勝敗判定
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);//ウィンドウを閉じる場合の処理
 		setTitle("勝敗判定");//ウィンドウのタイトル
-		setSize(8 * 45 + 10, 8 * 45 + 200);//ウィンドウのサイズを設定
 		if(judge == "Opponent surrendered. You win"||judge == "You surrendered. You lose"||judge =="No one can put Draw"
 				||judge =="Disconnected" + "No contest"||judge =="Disconnected.../n Draw"||judge =="Time over You win"||judge == "Time over You lose") {
 			score = new JLabel();
@@ -691,6 +698,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 				jl2 = new JLabel("You lose");
 			}
 			else if(judge == "Disconnected"+"No contest") {
+				c.removeAll();
 				jl = new JLabel("Disconnected");
 				jl2 = new JLabel("No contest");
 			}
@@ -767,9 +775,9 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			init();
 			sendMessage(command);
 			waitMatching();
-			
+			return;
 		}
-		if (command.equals("e")) {
+		else if (command.equals("e")) {
 			sendMessage(command);
 			goodbye();
 		}
@@ -888,7 +896,11 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			}
 		}
 		getResult(s);
-		updateDisp("800");
+		c.setVisible(false);
+		c.setVisible(true);
+		if (s != "Disconnected"+"No contest") {
+			updateDisp("800");
+		}
 	}
 	
 	//ガイド機能のコマンド
@@ -917,6 +929,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 public void setLimitTime(Player player) {
 		c = getContentPane();
 		c.setLayout(null);
+		setTitle("時間設定");
 		
 		label1 = new JLabel("希望の対局時間を入力してください");
 		label1.setFont(new Font("SanSerif",Font.BOLD,20));
