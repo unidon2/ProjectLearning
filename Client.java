@@ -1,4 +1,4 @@
-/* 5/14 13:19 */
+/* 5/14 14:25 */
 
 //パッケージのインポート
 import java.awt.Color;
@@ -51,6 +51,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 	private int nott;
 	static int decided = 0;
 	static boolean passing = false;
+	static boolean RE = false;
 	
 	private JLabel input_restTimetext, input_restTimenum;
 	private JLabel access_restTimetext, access_restTimenum;
@@ -63,12 +64,12 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 	private boolean selected = false; //希望時間が定まったとき真になる
 	private Timer timer_input;	//先手用タイマー
 	private Timer timer_access;	//後手用タイマー
+	private Timer jrrr;
 	private JButton Accept, NoAccept1, NoAccept2;
 	private JLabel l1,l2,l3;
 	// コンストラクタ
 	public Client() { //OthelloオブジェクトとPlayerオブジェクトを引数とする
 		player = new Player();
-		buttonArray = new JButton[8 * 8];//ボタンの配列を作成
 		inputName();
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setTitle("ネットワーク対戦型オセロゲーム");//ウィンドウのタイトル
@@ -91,12 +92,19 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 	
 	public void init() {
 		game = new Othello();
+		buttonArray = new JButton[8 * 8];
 		flag_cb = false;
 		selected = false;
 		section = 3;
 		decided = 0;
 		match = false;
 		assist = false;
+		time = 10;
+		optime = 10;
+		jrr = 5;
+		notouch = 0;
+		passing = false;
+		RE = false;
 		c.setVisible(false);
 		c.removeAll();
 		c.setVisible(true);
@@ -157,12 +165,33 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		}
 		
 		Playing();
+		
+		restart();
 	}
+	
+	public void restart() {
+		while (true) {
+			boolean a = RE;
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO 自動生成された catch ブロック
+				e.printStackTrace();
+			}
+			if (a) {
+				waitMatching();
+				break;
+			}
+		}
+		return;
+	}
+	
 	public void matching() {
 		JLabel jlmat1 = new JLabel();
 		JLabel jlmat2 = new JLabel();
 		setTitle("マッチング中");
 		c.setVisible(false);
+		c.setVisible(true);
 		
 		jlmat1 = new JLabel("マッチング中");
 		jlmat1.setBounds(0,90,370,30);
@@ -176,7 +205,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		
 		c.add(jlmat2);
 		c.add(jlmat1);
-		
+		c.setVisible(false);
 		c.setVisible(true);
 		
 	}
@@ -746,23 +775,29 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		c.add(jl);
 		c.add(jl2);
 		notouch = 1;
-		Timer jrrr;
 		int msec = 1000;
 		ActionListener al = new ActionListener(){
 			public void actionPerformed(ActionEvent e) {
 				jrr--;
 				if(jrr==-1) {
 					c.setVisible(false);
-					rebattle();
 					notouch =0;
 					score.setText("");
 					score.setVisible(false);
+					jrrr_stopper();
+					jrr = 0;
+					rebattle();
 				}
 			}
 		};
 		jrrr = new Timer(msec , al);
 		jrrr.start();
 	}
+	
+	public void jrrr_stopper() {
+		jrrr.stop();
+	}
+	
   	//マウスクリック時の処理
 	public void mouseClicked(MouseEvent e) {
 		if(notouch == 1) {
@@ -774,7 +809,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		if(command.equals("r")) {
 			init();
 			sendMessage(command);
-			waitMatching();
+			RE = true;
 			return;
 		}
 		else if (command.equals("e")) {
