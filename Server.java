@@ -1,4 +1,4 @@
-/* 最終更新 5/14/6:41 */
+/* 最終更新 5/14/14:26 */
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -84,7 +84,6 @@ public class Server{
     		receiver[i] = new Receiver(socket,i);
     		receiver[i].start();
     		out[i] = new PrintWriter(socket.getOutputStream());
-    		System.out.println(i);
     		matching(i);
     		printStatus(); //接続状態を出力する
     		break;
@@ -185,6 +184,8 @@ public class Server{
 		 return;
 	 }
 	 if (msg.charAt(0) == 'r') {
+		 out[playerNo].println("Matching");
+		 out[playerNo].flush();
 		 matching(playerNo);
 		 return;
 	 }
