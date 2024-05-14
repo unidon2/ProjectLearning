@@ -1,5 +1,3 @@
-/* 5/14 14:25 */
-
 //パッケージのインポート
 import java.awt.Color;
 import java.awt.Container;
@@ -41,8 +39,8 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 	private JButton giveup1,giveup2;
 	private JRadioButton help,nohelp;
 	private Timer timer;
-	private boolean match;
-	private boolean assist;
+	private static boolean match;
+	private static boolean assist;
 	private int time;
 	private int optime;
 	public int section = 3;
@@ -79,6 +77,8 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		c = getContentPane();
 		init();
 		connectServer("localhost",10000);
+		restarter reset = new restarter();
+		reset.start();
 		waitMatching();
 	}
 	
@@ -130,6 +130,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 	}
 	
 	public void waitMatching() {
+		RE = false;
 		matching();
 		while (true) {
 			boolean m = match;
@@ -150,6 +151,9 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		else {
 			setTime();
 		}
+		if (RE) {
+			return;
+		}
 		
 		try {
 			Thread.sleep(100);
@@ -163,10 +167,15 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		else {
 			setTime();
 		}
+		if (RE) {
+			return;
+		}
 		
 		Playing();
 		
-		restart();
+		if (RE) {
+			return;
+		}
 	}
 	
 	public void restart() {
@@ -180,15 +189,15 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			}
 			if (a) {
 				waitMatching();
-				break;
+				return;
 			}
 		}
-		return;
 	}
 	
 	public void matching() {
 		JLabel jlmat1 = new JLabel();
 		JLabel jlmat2 = new JLabel();
+		System.out.println("マッチング中");
 		setTitle("マッチング中");
 		c.setVisible(false);
 		c.setVisible(true);
@@ -218,8 +227,12 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			if(selected)
+			if(selected) {
 				break;
+			}
+			if (RE) {
+				return;
+			}
 		}
 		decided = 0;
 		System.out.println("exit");
@@ -238,6 +251,9 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			}
 			if(decided !=0) {
 				break;
+			}
+			if (RE) {
+				return;
 			}
 		}
 		selected = false;
@@ -374,7 +390,23 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		out.flush();//送信データを送る
 		System.out.println("サーバにメッセージ " + msg + " を送信しました"); //テスト標準出力
 	}
-
+	
+	class restarter extends Thread {
+		public void run() {
+			try {
+				while (true) {
+					boolean a = RE;
+					Thread.sleep(1000);
+					if (a) {
+						waitMatching();
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	// データ受信用スレッド(内部クラス)
 	class Receiver extends Thread {
 		private InputStreamReader sisr; //受信データ用文字ストリーム
