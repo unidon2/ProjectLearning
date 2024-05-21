@@ -14,6 +14,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 import javax.swing.ButtonGroup;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -50,13 +51,16 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 	static int decided = 0;
 	static boolean passing = false;
 	static boolean RE = false;
+	private int min_time;
+	private int max_time;
 	
 	private JLabel input_restTimetext, input_restTimenum;
 	private JLabel access_restTimetext, access_restTimenum;
 	private JButton Ok;
 	private JComboBox<String> cbmin, cbsec;
 	private JLabel label1, label2, labelm, labels;//希望時間画面表示のラベル
-	private boolean flag_cb = false; //希望時間入力時に使われるflag
+	private boolean flag_cb1 = false; //希望時間入力時に使われるflag_cb1,2
+	private boolean flag_cb2 = false;
 	private int input_time; //先手から入力された制限時間(s)
 	private JLabel desired_time; 
 	private boolean selected = false; //希望時間が定まったとき真になる
@@ -65,24 +69,26 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 	private Timer jrrr;
 	private JButton Accept, NoAccept1, NoAccept2;
 	private JLabel l1,l2,l3;
+	DefaultComboBoxModel<String> dcbmin;
+	DefaultComboBoxModel<String> dcbsec;
 	// コンストラクタ
-	public Client() { //OthelloオブジェクトとPlayerオブジェクトを引数とする
-		player = new Player();
-		inputName();
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	public Client() { //引数なし
+		player = new Player(); // プレイヤクラスの確保
+		inputName(); // 名前入力
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); //ウィンドウを閉じる際の動作設定
 		setTitle("ネットワーク対戦型オセロゲーム");//ウィンドウのタイトル
-		setSize(370,490);
-		setLocationRelativeTo(null);
-		setVisible(true);
-		c = getContentPane();
-		init();
-		connectServer("localhost",10000);
-		restarter reset = new restarter();
-		reset.start();
-		waitMatching();
+		setSize(370,490); // ウィンドウサイズの設定
+		setLocationRelativeTo(null); //ウィンドウを画面中央へ
+		setVisible(true); //ウィンドウの可視化
+		c = getContentPane(); //描画先を取得
+		init(); //初期化
+		connectServer("localhost",10000); //サーバー接続
+		restarter reset = new restarter(); //再戦フラグ監視用のサブクラス定義
+		reset.start(); // サブクラスの動作
+		waitMatching(); //本プログラムの開始
 	}
 	
-	public void inputName() {
+	public void inputName() { //名前の入力
 		String myName = JOptionPane.showInputDialog(null,"名前を入力してください","名前の入力",JOptionPane.QUESTION_MESSAGE);
 		if(myName.equals("")){
 			myName = "No name";//名前がないときは，"No name"とする
@@ -90,11 +96,14 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		player.setName(myName);
 	}
 	
-	public void init() {
-		game = new Othello();
-		buttonArray = new JButton[8 * 8];
-		flag_cb = false;
+	public void init() { //初期化
+		game = new Othello(); //オセロクラスの取得
+		buttonArray = new JButton[8 * 8]; //本来はPlayingメソッドで良いのですが、回線切断によってupdateDisp("800")が呼び出された際に未定義でエラーを吐く（動作には影響しませんが）のが嫌だったので移してあります
+		flag_cb1 = false;
+		flag_cb2 = false;
 		selected = false;
+		min_time = 300;
+		max_time = 900;
 		section = 3;
 		decided = 0;
 		match = false;
@@ -108,10 +117,9 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		c.setVisible(false);
 		c.removeAll();
 		c.setVisible(true);
-		System.out.println("aaa");
 	}
 	
-	public void waiting(int n) {
+	public void waiting(int n) { //Timerを用いて引数の秒数だけ待つメソッドです Thread.sleep(n*1000)と等価ですが、sleepだと画面遷移がうまくいかない場所があったりした場合に使用する目的で作成してあります
 		JLabel time = new JLabel();
 		int msec = 1000;
 		ActionListener second = new ActionListener(){
@@ -129,9 +137,9 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		time.setText(Integer.toString(n));
 	}
 	
-	public void waitMatching() {
-		RE = false;
-		matching();
+	public void waitMatching() { //メインのプログラム　実際の画面遷移に沿って各メソッドが呼び出されていると捉えていいです
+		RE = false; //init()でも初期化していますが、再戦の際は init() -> RE = true -> waitMatching()呼び出し の順なのでここで変えないと死にます
+		matching(); //マッチング画面の表示
 		while (true) {
 			boolean m = match;
 			try {
@@ -139,19 +147,19 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			if (m) {
+			if (m) { //マッチングしたら次へ
 				break;
 			}	
 		}
 		c.setVisible(false);
-		c.removeAll();
-		if (player.getColor() == 1) {
-			getTime();
+		c.removeAll(); //1度画面を初期化
+		if (player.getColor() == 1) { //先手の場合
+			getTime(); //先に時間設定
 		}
 		else {
-			setTime();
+			setTime(); //後手は承認から
 		}
-		if (RE) {
+		if (RE) { //この段階で回線切断が発生した場合にwaitMatchingを終了させる
 			return;
 		}
 		
@@ -161,36 +169,20 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			e.printStackTrace();
 		}
 		
-		if (player.getColor() == -1) {
+		if (player.getColor() == -1) { //さっきの逆
 			getTime();
 		}
 		else {
 			setTime();
 		}
-		if (RE) {
+		if (RE) { //同様
 			return;
 		}
 		
-		Playing();
+		Playing(); //対局画面の表示
 		
 		if (RE) {
 			return;
-		}
-	}
-	
-	public void restart() {
-		while (true) {
-			boolean a = RE;
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// TODO 自動生成された catch ブロック
-				e.printStackTrace();
-			}
-			if (a) {
-				waitMatching();
-				return;
-			}
 		}
 	}
 	
@@ -231,7 +223,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 				break;
 			}
 			if (RE) {
-				return;
+				return; //breakじゃなくてreturnなのは↓の処理を行って再度初期化しないといけなくなるのを防ぐためです
 			}
 		}
 		decided = 0;
@@ -263,10 +255,8 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		System.out.println("exit");
 	}
 	
-	
-		
 	public void Playing() {
-		game.start();
+		game.start(); //Othelloクラスのturn = 1
 		setSize(370,600);
 		int row = 8;
 		int[] grids = game.getGrid();
@@ -391,13 +381,13 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		System.out.println("サーバにメッセージ " + msg + " を送信しました"); //テスト標準出力
 	}
 	
-	class restarter extends Thread {
+	class restarter extends Thread { //再戦フラグの監視を行う内部クラス
 		public void run() {
 			try {
 				while (true) {
 					boolean a = RE;
 					Thread.sleep(1000);
-					if (a) {
+					if (a) { //再戦フラグが立っていたら再戦するだけ
 						waitMatching();
 					}
 				}
@@ -456,6 +446,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			optime = Integer.valueOf(msg.substring(3));
 			oprestTimenum.setText(String.valueOf(optime));
 			if (game.check_end(0) == 1) {
+				stopper();
 				endmsg(game.result());
 				return;
 			}
@@ -467,31 +458,25 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 					// TODO 自動生成された catch ブロック
 					e.printStackTrace();
 				}
-				try {
-					Thread.sleep(3000);
-				} catch (InterruptedException e) {
-					// TODO 自動生成された catch ブロック
-					e.printStackTrace();
-				}
 				c.setVisible(false);
 				game.changeTurn();
 				updateDisp("800");
 			}
 		}
 		
-		if (msg.equals("ooo")) {
+		if (msg.equals("ooo")) { //相手の時間切れ
 			game.check_end(player.getColor()*3);
 			endmsg(game.result());
 		}
-		if(msg.equals("giveup")) {
+		if(msg.equals("giveup")) { //相手の降参
 			endmsg(555);
 		}
-		if (msg.equals("xxx")) {
-			int played = game.count(1);
-			if (played < 20) {
-				endmsg(1000);
+		if (msg.equals("xxx")) { //相手の回線切断
+			int played = game.count(1); //現在置かれているマス数の獲得
+			if (played < 20) { // 20は適当に決めた値なので変更していいです
+				endmsg(1000); // = no contest
 			}
-			else {
+			else { // 枚数判定
 				endmsg(game.count(0)*10000);
 			}
 		}
@@ -507,14 +492,21 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			if((msg.equals("NoAccept1"))||(msg.equals("NoAccept2"))) {
 				if(msg.equals("NoAccept1")) {
 					label1.setText("時間を減らしてほしいです");
+					max_time = input_time - 15;
 				}else {
 					label1.setText("時間を増やしてほしいです");
+					min_time = input_time + 15;
 				}
-				
+				sendMessage("B" + min_time + max_time);
+				System.out.printf("時間範囲：%s ~ %s\n", str_desired_time(min_time), str_desired_time(max_time));
+				setMinTimeRange(min_time, max_time);
+				label2.setText("( " + str_desired_time(min_time) + "~" + str_desired_time(max_time) + " )");
+				cbmin.setSelectedIndex(0);
+				//cbsec.setSelectedIndex(0);
 				cbsec.setEnabled(true);
 				cbmin.setEnabled(true);
 				Ok.setEnabled(true);
-			
+				
 				//後手が非承認したら、先手用のタイマー更新および希望時間を再入力
 				int msec = 1000;
 				ActionListener al_input = new ActionListener(){
@@ -531,7 +523,6 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 							}else {
 								input_time=Integer.parseInt((String)cbmin.getSelectedItem())*60 + Integer.parseInt((String)cbsec.getSelectedItem());
 							}
-						
 							sendMessage("A"+Integer.toString(input_time)); //先手用の制限時間が切れたら、画面上の時間を希望時間として送信
 							cbsec.setEnabled(false);
 							cbmin.setEnabled(false);
@@ -550,19 +541,27 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			//(int型)希望時間(s)の受信の場合
 			else{
 				if(selected==false){
+
 					desired_time.setText(str_desired_time(Integer.valueOf(msg)));
 					optime = Integer.valueOf(msg);
 					//以下は1秒に値を1だけ減らすタイマーを定義している。
+					
 					if(Integer.valueOf(l3.getText())<(1)) {
 						Accept.setEnabled(true);
-						//NoAccept1.setEnabled(false);
-						//NoAccept2.setEnabled(false);
 					}
 					else {
 						Accept.setEnabled(true);
 						NoAccept1.setEnabled(true);
 						NoAccept2.setEnabled(true);
 					}
+					
+					if(optime == min_time) {
+						NoAccept1.setEnabled(false);
+					}
+					if(optime == max_time) {
+						NoAccept2.setEnabled(false);
+					}
+					
 					int msec = 1000;	
 					ActionListener al_access = new ActionListener(){
 						public void actionPerformed(ActionEvent e) {
@@ -585,8 +584,11 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 					access_restTimenum.setVisible(true);
 				}
 			}
+		}else if(msg.charAt(0)=='B') {
+			msg = msg.substring(1);
+			min_time = Integer.valueOf(msg.substring(0,3));
+			max_time = Integer.valueOf(msg.substring(3,6));
 		}
-		
 		
 		System.out.println("サーバからメッセージ " + msg + " を受信しました"); //テスト用標準出力
 	}
@@ -599,8 +601,8 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			jld2 = new JLabel("Your turn!!");
 		}
 
-		jld.setBounds(10,10,350,50);
-		jld2.setBounds(10,60,350,50);
+		jld.setBounds(0,460,350,30);
+		jld2.setBounds(0,490,350,30);
 		c.add(jld);
 		c.add(jld2);
 		passing = true;
@@ -625,7 +627,6 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		
 		if (t == 1) {
 			turn.setText("黒のターン");
-			//turn.setText("黒のターン");
 		}
 		else {
 			turn.setText("白のターン");
@@ -689,7 +690,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 	public void stopper_access() {
 		timer_access.stop();
 	}
-	public void rebattle() {
+	public void rebattle() { //再戦画面の表示
 		c.removeAll();
 		JLabel jl = new JLabel();
 		JButton jby = new JButton();
@@ -727,9 +728,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 	}
 	
 	//結果を取得して出力するメソッド
-	//結果をサーバから受け取るためのものはまた別に作成予定
 	public void getResult(String judge) {
-		//c.removeAll();
 		JLabel jl = new JLabel();
 		JLabel jl2 = new JLabel();
 		score = new JLabel();
@@ -759,7 +758,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 				jl2 = new JLabel("You lose");
 			}
 			else if(judge == "Disconnected"+"No contest") {
-				c.removeAll();
+				c.removeAll(); //時間設定時の回線切断などがここに含まれるので、ここだけ全て削除した後に配置するようにしています
 				jl = new JLabel("Disconnected");
 				jl2 = new JLabel("No contest");
 			}
@@ -838,19 +837,18 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		else {
 		JButton theButton = (JButton)e.getComponent();//クリックしたオブジェクトを得る．キャストを忘れずに
 		String command = theButton.getActionCommand();//ボタンの名前を取り出す
-		if(command.equals("r")) {
-			init();
-			sendMessage(command);
-			RE = true;
+		if(command.equals("r")) { //再戦ボタンが押された場合
+			init(); //初期化
+			sendMessage(command); //サーバー側でマッチング待ちに入れてもらう
+			RE = true; //フラグ変化
 			return;
 		}
-		else if (command.equals("e")) {
-			sendMessage(command);
-			goodbye();
+		else if (command.equals("e")) { //終了ボタンが押された場合
+			sendMessage(command); //サーバー側で初期化してもらう
+			goodbye(); //終了画面の表示
 		}
-		else if(command.equals("giveup1")) {
-			System.out.println("giveup");
-			sendMessage("giveup");
+		else if(command.equals("giveup1")) { //降参ボタンを押したとき
+			sendMessage("giveup"); //相手に降参を伝える
 			endmsg(556);
 			}
 		//置けるマスにクリックをした想定。
@@ -871,6 +869,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 					}
 					System.out.println(time);
 					if (game.check_end(0) == 1) {
+						stopper();
 						endmsg(game.result());
 						return;
 					}
@@ -878,12 +877,6 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 						detect("opponent cannot put!!");
 						try {
 							Thread.sleep(10);
-						} catch (InterruptedException e1) {
-							// TODO 自動生成された catch ブロック
-							e1.printStackTrace();
-						}
-						try {
-							Thread.sleep(3000);
 						} catch (InterruptedException e1) {
 							// TODO 自動生成された catch ブロック
 							e1.printStackTrace();
@@ -900,9 +893,6 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		}
 	
 	public void endmsg(int n) {
-		/*for(int i=0;i<64;i++) {
-			buttonArray[i].setVisible(false);
-		}*/
 		if (n >= 1000 || n <= -1000) {
 			sendMessage("+");
 		}
@@ -983,17 +973,74 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 			assist = false;
 			updateDisp("800");
 		}
-		if((Integer.parseInt((String)cbmin.getSelectedItem()) == 15) && flag_cb == false) {
+		
+		if((Integer.parseInt((String)cbmin.getSelectedItem()) == 15) && flag_cb1 == false) {
 			cbsec.setEnabled(false);
-			flag_cb = true;
-		}else if((Integer.parseInt((String)cbmin.getSelectedItem()) != 15) && flag_cb == true){
+			flag_cb1 = true;
+		}else if((Integer.parseInt((String)cbmin.getSelectedItem()) != 15) && flag_cb1 == true){
 			cbsec.setEnabled(true);
-			flag_cb = false;
+			flag_cb1 = false;
 		}
-	}
+		
+		String currentSelection = (String) cbsec.getSelectedItem();
+		if(min_time == max_time) {
+			DefaultComboBoxModel<String> newModel = new DefaultComboBoxModel<String>();
+			if((min_time%60)==0) {
+				newModel.addElement("00");
+			}else {
+				newModel.addElement(String.valueOf(min_time%60));
+			}
+				cbsec.setModel(newModel);
+		}else {
+		
+			if((Integer.parseInt((String)cbmin.getSelectedItem()) == min_time/60)) {
+					DefaultComboBoxModel<String> newModel = new DefaultComboBoxModel<String>();
+				
+					for (int t = (min_time%60); t <= 45 ; t+=15) {
+						if(t==0) {
+							newModel.addElement("00");
+						}else {
+							newModel.addElement(String.valueOf(t));
+						}
+					}
+					cbsec.setModel(newModel);
+					flag_cb2 = true;
+			}else if((Integer.parseInt((String)cbmin.getSelectedItem()) == max_time/60)) {
+					DefaultComboBoxModel<String> newModel = new DefaultComboBoxModel<String>();
+				
+					for (int t = 0; t <=(max_time % 60); t+=15) {
+						if(t==0) {
+							newModel.addElement("00");
+						}else {
+							newModel.addElement(String.valueOf(t));
+						}
+					}
+					cbsec.setModel(newModel);
+					flag_cb2 = true;
+			}else if(flag_cb2==true){
+				DefaultComboBoxModel<String> newModel = new DefaultComboBoxModel<String>();
+				newModel.addElement("00");
+				newModel.addElement("15");
+				newModel.addElement("30");
+				newModel.addElement("45");
+				cbsec.setModel(newModel);
+				flag_cb2 = false;
+			}
+		}
+		 if (currentSelection != null && ((DefaultComboBoxModel<String>) cbsec.getModel()).getIndexOf(currentSelection) != -1) {
+	            cbsec.setSelectedItem(currentSelection);
+	        } else {
+	            cbsec.setSelectedIndex(0);
+	        }
 
+	        cbsec.revalidate();
+	        cbsec.repaint();
+	}
 	
+
 public void setLimitTime(Player player) {
+		min_time = 300;
+		max_time = 900;
 		c = getContentPane();
 		c.setLayout(null);
 		setTitle("時間設定");
@@ -1008,14 +1055,17 @@ public void setLimitTime(Player player) {
 		label2.setFont(new Font("SanSerif",Font.PLAIN,20));
 		label2.setHorizontalAlignment(JLabel.CENTER);
 		
+		
 		String[] min_data = {"10", "5", "6", "7", "8", "9", "11", "12", "13", "14", "15"};
 		String[] sec_data = {"00", "15", "30", "45"};
-		cbmin = new JComboBox<String>(min_data);
 		
+		dcbmin = new DefaultComboBoxModel<>(min_data);
+		cbmin = new JComboBox<String>(dcbmin);
 		cbmin.setBounds(100, 130, 70, 40);
 		cbmin.addActionListener(this);
 		
-		cbsec = new JComboBox<String>(sec_data);
+		dcbsec = new DefaultComboBoxModel<>(sec_data);
+		cbsec = new JComboBox<String>(dcbsec);
 		cbsec.setBounds(210,130,70,40);
 		cbsec.addActionListener(this);
 		
@@ -1029,8 +1079,7 @@ public void setLimitTime(Player player) {
 		labels.setBounds(280,140,20,20);
 		labels.setFont(new Font("SanSerif",Font.PLAIN,20));
 		labels.setHorizontalAlignment(JLabel.CENTER);
-		
-
+	
 		c.add(label1);
 		c.add(label2);
 		c.add(cbmin);
@@ -1089,6 +1138,7 @@ public void setLimitTime(Player player) {
 						input_time=Integer.parseInt((String)cbmin.getSelectedItem())*60 + Integer.parseInt((String)cbsec.getSelectedItem());
 					}
 					sendMessage("A"+Integer.toString(input_time));
+					
 					cbsec.setEnabled(false);
 					cbmin.setEnabled(false);
 					Ok.setEnabled(false);
@@ -1102,17 +1152,15 @@ public void setLimitTime(Player player) {
 		input_restTimenum.setBounds(300,300,40,20);
 		input_restTimenum.setFont(new Font("SanSerif",Font.PLAIN,20));
 		input_restTimenum.setHorizontalAlignment(JLabel.CENTER);
-		c.add(input_restTimenum);
-		//相手の承認・非承認による画面の切り替え
 		
+		c.add(input_restTimenum);
 		c.setVisible(true);
-		//c.setVisible(false);
 }
 	
 	//後手用）承認画面の表示メソッド
  public void accept(Player player) {
-	 	
-    	//JLabel l1, l2, l3;
+		min_time = 300;
+		max_time = 900;
 		int num_naccept=3; //非承認をした回数、後にメソッドの引数にして値を渡す予定（修正）
 		
 		setTitle("承認しますか？");
@@ -1151,13 +1199,13 @@ public void setLimitTime(Player player) {
 		Accept.setBounds(150,210,80,40);
 		Accept.setFont(new Font("SanSerif",Font.BOLD,20));
 		
-		NoAccept1 = new JButton("非承認（減らしてほしい）");
+		NoAccept1 = new JButton("非承認（減らして!）");
 		NoAccept1.setBounds(20,270,150,40);
-		NoAccept1.setFont(new Font("SanSerif",Font.BOLD,12));
+		NoAccept1.setFont(new Font("SanSerif",Font.BOLD,11));
 		
-		NoAccept2 = new JButton("非承認（増やしてほしい）");
+		NoAccept2 = new JButton("非承認（増やして!）");
 		NoAccept2.setBounds(200,270,150,40);
-		NoAccept2.setFont(new Font("SanSerif",Font.BOLD,12));
+		NoAccept2.setFont(new Font("SanSerif",Font.BOLD,11));
 		
 		//初期化：承認・非承認無効化
 		Accept.setEnabled(false);
@@ -1210,8 +1258,6 @@ public void setLimitTime(Player player) {
 			public void mouseExited(MouseEvent e) {}
 		});
 		
-		
-		
 
 		NoAccept2.addMouseListener(new MouseListener() {
 			public void mouseClicked(MouseEvent e) {
@@ -1262,6 +1308,16 @@ public void setLimitTime(Player player) {
 			return(time/60 + ":" + time%60);
 		}
 	}
+	
+	
+	public void setMinTimeRange(int min, int max) {
+		DefaultComboBoxModel<String> newModel = new DefaultComboBoxModel<String>();
+        for (int t = (min/60); t <= (max/60); t++) {
+            newModel.addElement(String.valueOf(t));
+        }
+        cbmin.setModel(newModel);
+	}
+
 	
 	public void goodbye() {
 		c.setVisible(false);
