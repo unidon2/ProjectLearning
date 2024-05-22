@@ -4,72 +4,63 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-class Connecter {
-	private int number;
-	private PrintWriter out;
-	private Receiver receiver;
-	Socket socket;
+public class ServerDriver extends Thread{
+	Server server;
 	
-	Connecter(int n){
-		number = n;
-		connectServer("localhost",10000);
-	}
-	
-	public void connectServer(String ipAddress, int port) {
-		try {
-			socket = new Socket(ipAddress, port);
-			out = new PrintWriter(socket.getOutputStream(), true);
-			receiver = new Receiver(socket);
-			receiver.start();
-		} catch (Exception e) {
-			e.printStackTrace();
+	class Connecter {
+		private int number;
+		private PrintWriter out;
+		private Receiver receiver;
+		private Socket socket;
+		
+		Connecter(int n){
+			number = n;
+			connectServer("localhost",10000);
 		}
-	}
-	
-	public void sendMessage(String msg) {
-		out.println(msg);
-		out.flush();
-		System.out.println(number + "人目の接続者が " + msg + " を送信しました");
-	}
-	
-	public void disconnect() {
-		try {
-			socket.shutdownInput();
-			socket.shutdownOutput();
-			socket.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	class Receiver extends Thread {
-		private InputStreamReader sisr;
-		private BufferedReader br;
-
-		Receiver (Socket socket){
-			try{
-				sisr = new InputStreamReader(socket.getInputStream());
-				br = new BufferedReader(sisr);
-			} catch (IOException e) {
+		
+		public void connectServer(String ipAddress, int port) {
+			try {
+				socket = new Socket(ipAddress, port);
+				out = new PrintWriter(socket.getOutputStream(), true);
+				receiver = new Receiver(socket);
+				receiver.start();
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 		
-		public void run(){
-			try{
-				while(true) {
-					String inputLine = br.readLine();
-					if (inputLine != null) {
-						System.out.println(number + "人目の接続者が " + inputLine + " を受信しました");
-					}
+		public void sendMessage(String msg) {
+			out.println(msg);
+			out.flush();
+			System.out.println(number + "人目の接続者が " + msg + " を送信しました");
+		}
+		
+		
+		class Receiver extends Thread {
+			private InputStreamReader sisr;
+			private BufferedReader br;
+
+			Receiver (Socket socket){
+				try{
+					sisr = new InputStreamReader(socket.getInputStream());
+					br = new BufferedReader(sisr);
+				} catch (IOException e) {
 				}
-			} catch (IOException e){
+			}
+			
+			public void run(){
+				try{
+					while(true) {
+						String inputLine = br.readLine();
+						if (inputLine != null) {
+							System.out.println(number + "人目の接続者が " + inputLine + " を受信しました");
+						}
+					}
+				} catch (IOException e){
+				}
 			}
 		}
 	}
-}
-
-public class ServerDriver extends Thread{
-	Server server;
 	
 	public void run() {
 		server = new Server(10000);
