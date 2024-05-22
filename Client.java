@@ -473,7 +473,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		}
 		if (msg.equals("xxx")) { //相手の回線切断
 			int played = game.count(1); //現在置かれているマス数の獲得
-			if (played < 20) { // 20は適当に決めた値なので変更していいです
+			if (played < 32) { 
 				endmsg(1000); // = no contest
 			}
 			else { // 枚数判定
