@@ -1,3 +1,5 @@
+/* 最終更新 5/23 1:09 */
+
 //パッケージのインポート
 import java.awt.Color;
 import java.awt.Container;
