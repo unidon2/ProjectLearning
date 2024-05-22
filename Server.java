@@ -1,4 +1,4 @@
-/* 最終更新 5/14/14:26 */
+/* 最終更新 5/22/15:45 */
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,7 +11,6 @@ import java.util.Arrays;
 public class Server{
  private int port; // サーバの待ち受けポート
  private int mx = 100;
- private int mnow = 0;
  private int pnow = 0;
  private boolean [] online; //オンライン状態管理用配列
  private int [] status;
@@ -52,7 +51,6 @@ public class Server{
    try{
     while(true) {// データを受信し続ける
      String inputLine = br.readLine();//データを一行分読み込む
-     System.out.println(playerNo + "から" + inputLine + "を受信しました");
      if (inputLine != null){ //データを受信したら
       forwardMessage(inputLine, playerNo); //もう一方に転送する
      }
@@ -85,10 +83,10 @@ public class Server{
     		receiver[i].start();
     		out[i] = new PrintWriter(socket.getOutputStream());
     		matching(i);
-    		printStatus(); //接続状態を出力する
     		break;
     	}
     }
+    printStatus();
    }
   } catch (Exception e) {
    System.err.println("ソケット作成時にエラーが発生しました: " + e);
@@ -120,7 +118,6 @@ public class Server{
 						 status[a] = -j;
 						 opp[i] = a;
 						 opp[a] = i;
-						 mnow++;
 						 sendColor(i,a);
 						 return;
 					 }
@@ -137,7 +134,7 @@ public class Server{
 	 System.out.println("ID :  状態");
 	 for (int i = 0; i < mx; i++) {
 		 if (online[i]) {
-			 System.out.print(i + " : ");
+			 System.out.print(i+1 + " : ");
 			 if (status[i] == mx) {
 				 System.out.println("マッチング中");
 			 }
@@ -150,20 +147,20 @@ public class Server{
 		 }
 	 }
 	 System.out.println();
-	 System.out.println("対局中のマッチ: " + mnow);
+	 System.out.println("対局中のマッチ: ");
 	 for (int i = 1; i < mx/2 + 1; i++) {
 		 for (int j = 0; j < mx; j++) {
 			 if (status[j] == i) {
-				 System.out.print("Match " + i + " : " + j);
+				 System.out.print("Match " + i + " : " + (j+1));
 			 }
 		 }
 		 for (int j = 0; j < mx; j++) {
 			 if (status[j] == -i) {
-				 System.out.println(" vs " + j);
+				 System.out.println(" vs " + (j+1));
 			 }
 		 }
 	 }
-	 
+	 System.out.println();
  }
 
  public void sendColor(int bl, int wt){ //先手後手情報(白黒)の送信
@@ -180,12 +177,9 @@ public class Server{
 	 }
 	 if (msg.charAt(0) == '+') {
 		 keep(playerNo);
-		 mnow--;
 		 return;
 	 }
 	 if (msg.charAt(0) == 'r') {
-		 out[playerNo].println("Matching");
-		 out[playerNo].flush();
 		 matching(playerNo);
 		 return;
 	 }
