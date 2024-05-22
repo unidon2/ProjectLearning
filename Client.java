@@ -82,7 +82,7 @@ public class Client extends JFrame implements MouseListener,ActionListener {
 		setVisible(true); //ウィンドウの可視化
 		c = getContentPane(); //描画先を取得
 		init(); //初期化
-		connectServer("172.20.10.3",10000); //サーバー接続
+		connectServer("localhost",10000); //サーバー接続
 		restarter reset = new restarter(); //再戦フラグ監視用のサブクラス定義
 		reset.start(); // サブクラスの動作
 		waitMatching(); //本プログラムの開始
